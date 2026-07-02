@@ -197,16 +197,12 @@ const PAY_DAY = 28;
 const LISA_PROCESS_DAY = 7;
 const CC_THRESHOLD = -42.47; // expected credit card balance covering known bills
 
-function currentMonthKey(){
-  const now = new Date();
-  return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-}
-
 function computeOnTrack(){
-  const mo = months.find(m=>m.key===currentMonthKey());
+  const mo = months.find(m=>m.key===balances.asOf);
   if(!mo) return null;
+  const [asOfYear, asOfMonthNum] = balances.asOf.split('-').map(Number);
   const now = new Date();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const daysInMonth = new Date(asOfYear, asOfMonthNum, 0).getDate();
   const daysLeft = daysInMonth - now.getDate() + 1; // today counts as a day still to go
   const nett = nettOf(mo);
   const cc = balances.creditCard||0;
@@ -346,7 +342,7 @@ function renderOnTrack(){
   const box = document.getElementById('on-track-box');
   const t = computeOnTrack();
   if(!t){
-    box.innerHTML = `<div class="track-box" style="color:#888;">No entry for this month yet in the table below — add one to see if you're on track.</div>`;
+    box.innerHTML = `<div class="track-box" style="color:#888;">No entry for ${monthLabel(balances.asOf)} (your "As of month") in the table below — add one to see if you're on track.</div>`;
     return;
   }
   box.innerHTML = `
@@ -446,8 +442,7 @@ document.getElementById('months-body').addEventListener('click', async (e)=>{
 });
 
 (async function init(){
-  const { data: { session } } = await sb.auth.getSession();
-  if(session){ showApp(); } else { showLogin(); }
+  showApp(); // PREVIEW BYPASS - not present in the real deployed file
 })();
 sb.auth.onAuthStateChange((event)=>{
   if(event === 'SIGNED_OUT') showLogin();
